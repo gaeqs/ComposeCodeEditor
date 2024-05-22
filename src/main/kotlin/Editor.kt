@@ -8,7 +8,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun Editor(state: EditorState, modifier: Modifier = Modifier) {
@@ -35,7 +39,15 @@ fun Editor(state: EditorState, modifier: Modifier = Modifier) {
 private fun EditorLine(state: EditorState, line: Line, index: Int) {
     BasicTextField(
         value = TextFieldValue(
-            text = line.text,
+            annotatedString = buildAnnotatedString {
+                pushStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 15.sp
+                    )
+                )
+                append(line.text)
+            },
             selection = state.selection.lineSelection(index, line.text)
         ),
         onValueChange = {

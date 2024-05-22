@@ -1,6 +1,9 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,7 +14,7 @@ import java.io.File
 
 
 val testText by lazy {
-    val file = File("/home/gaeqs/IdeaProjects/CodeTest/build.gradle.kts")
+    val file = File("build.gradle.kts").absoluteFile
     return@lazy file.readText()
 }
 
@@ -20,12 +23,20 @@ val testText by lazy {
 fun App() {
     val state by remember { mutableStateOf(EditorState().apply { setText(testText) }) }
 
-    MaterialTheme {
-        Surface {
-            Editor(state)
+    MaterialTheme(darkColorScheme()) {
+        Column {
+            //Editor(state)
+            Button(
+                onClick = {
+
+                }
+            ) {
+                Text("Hello World!")
+            }
         }
     }
 }
+
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
