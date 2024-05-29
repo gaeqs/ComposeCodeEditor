@@ -1,15 +1,25 @@
+import androidx.compose.foundation.text.isTypedEvent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
-import kotlin.math.max
 import kotlin.math.min
 
-data class CaretPosition(val row: Int = 0, val column: Int = 0)
+data class CaretPosition(val row: Int = 0, val column: Int = 0) {
+    operator fun compareTo(o: CaretPosition): Int {
+        val r = row.compareTo(o.row)
+        if (r == 0) return column.compareTo(o.column)
+        return r
+    }
+}
+
 data class CaretSelection(val from: CaretPosition, val to: CaretPosition) {
 
     constructor(position: CaretPosition = CaretPosition()) : this(position, position) {
@@ -32,21 +42,36 @@ data class CaretSelection(val from: CaretPosition, val to: CaretPosition) {
     }
 
     fun normalized(): CaretSelection {
-        return CaretSelection(
-            CaretPosition(min(from.row, to.row), min(from.column, to.column)),
-            CaretPosition(max(from.row, to.row), max(from.column, to.column))
-        )
+        return if (from < to) this else CaretSelection(to, from)
     }
 }
 
 data class Line(val text: String) {
     val requester = FocusRequester()
+    var layout: TextLayoutResult? = null
+    var coordinates: LayoutCoordinates? = null
+
+    fun getCharAtPosition(position: Offset) = layout?.getOffsetForPosition(position)
+
 }
 
 class EditorState {
-    var selection by mutableStateOf(CaretSelection())
-    val lines = mutableStateListOf<Line>(Line(""))
+    private var _selection by mutableStateOf(CaretSelection())
+
+    var selection: CaretSelection
+        get() = _selection
+        set(value) {
+            _selection = value
+            normalizedSelection = _selection.normalized()
+        }
+
+    var normalizedSelection = CaretSelection()
+        private set
+
+    var currentHoveredElement by mutableStateOf(Pair(0, Offset(0.0f, 0.0f)))
     val keyEvent: (EditorState, ClipboardManager, KeyEvent) -> Boolean = ::onKeyEvent
+
+    val lines = mutableStateListOf<Line>(Line(""))
 
     fun getText(lineSeparator: String = "\n") = lines.joinToString(separator = lineSeparator) { it.text }
 
@@ -61,7 +86,7 @@ class EditorState {
     }
 
     fun clearSelected() {
-        val selection = selection.normalized()
+        val selection = normalizedSelection
         val firstLine = selection.from.row
 
         selection.lineSelection(firstLine, lines[firstLine].text).let {
@@ -79,6 +104,7 @@ class EditorState {
             lines.removeRange(selection.from.row + 1, selection.to.row)
         }
 
+        println(selection.from)
         this.selection = CaretSelection(selection.from)
     }
 
@@ -138,6 +164,9 @@ class EditorState {
 }
 
 private fun onKeyEvent(state: EditorState, clipboard: ClipboardManager, event: KeyEvent): Boolean {
+    if (event.isTypedEvent) {
+        state.clearSelected()
+    }
     if (event.type != KeyEventType.KeyDown) return false
     if (event.key == Key.Enter) {
         state.newLine()
